@@ -1,15 +1,15 @@
 #define _CRT_SECURE_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
 /*
-*¿ª·¢ÈÕÖ¾
-* 1.´´½¨ÏîÄ¿
-* 2.µ¼ÈëËØ²Ä
-* 3.ÊµÏÖ×î¿ªÊ¼µÄÓÎÏ·³¡¾°
-* 4.ÊµÏÖÓÎÏ·¶¥²¿¡¤µÄ¹¤¾ßÀ¸
-* 5.ÊµÏÖÖ²Îï¡¤µÄ¹¦ÄÜ¿¨ÅÆ
+*å¼€å‘æ—¥å¿—
+* 1.åˆ›å»ºé¡¹ç›®
+* 2.å¯¼å…¥ç´ æ
+* 3.å®ç°æœ€å¼€å§‹çš„æ¸¸æˆåœºæ™¯
+* 4.å®ç°æ¸¸æˆé¡¶éƒ¨Â·çš„å·¥å…·æ 
+* 5.å®ç°æ¤ç‰©Â·çš„åŠŸèƒ½å¡ç‰Œ
 */
 #include<stdio.h>
-#include<graphics.h>//easyxÍ¼ĞÎ¿âµÄÍ·ÎÄ¼ş£¬ĞèÒªÏÂÔØ
+#include<graphics.h>//easyxå›¾å½¢åº“çš„å¤´æ–‡ä»¶ï¼Œéœ€è¦ä¸‹è½½
 #include"tools.h"
 #include<time.h>
 #include"vector2.h"
@@ -17,22 +17,28 @@
 #pragma comment(lib, "winmm.lib")
 #define WIN_WIDTH 900
 #define WIN_HEIGHT 600
-//Ã¶¾ÙÖ²ÎïµÃµ½Ö²ÎïÊıÁ¿
+#define ZM_MAX 11
+//æšä¸¾æ¤ç‰©å¾—åˆ°æ¤ç‰©æ•°é‡
 enum { WAN_DOU, XIANG_RI_KUI, ZHI_WU_COUNT };
-IMAGE imgBg;//±íÊ¾±³¾°Í¼Æ¬
-IMAGE imgBar;//¹¤¾ßÀ¸
+IMAGE imgBg;//è¡¨ç¤ºèƒŒæ™¯å›¾ç‰‡
+IMAGE imgBar;//å·¥å…·æ 
 IMAGE imgCards[ZHI_WU_COUNT];
-IMAGE* imgZhiWu[ZHI_WU_COUNT][20];//Ö¸Õë
+IMAGE* imgZhiWu[ZHI_WU_COUNT][20];//æŒ‡é’ˆ
 
-int curX, curY; //µ±Ç°ÒÆ¶¯×ø±êÎ»ÖÃ
-int curZhiWu = 0;// 0 :Ã»ÓĞÖ²Îï 1: µÚÒ»ÖÖÖ²Îï
+int curX, curY; //å½“å‰ç§»åŠ¨åæ ‡ä½ç½®
+int curZhiWu = 0;// 0 :æ²¡æœ‰æ¤ç‰© 1: ç¬¬ä¸€ç§æ¤ç‰©
+
+enum{GOING, WIN, FAIL};
+int killCount;
+int zmCount;//ä»¥åŠå‡ºç°åƒµå°¸ä¸ªæ•°
+int gameStatus;//æ¸¸æˆçŠ¶æ€
 
 struct zhiwu {
-	int type;// 0£ºÃ»ÓĞÖ²Îï 1£º µÚÒ»ÖÖÖ²Îï
-	int frameIndex;//ĞòÁĞÖ¡µÄ¡¤ĞòºÅ
+	int type;// 0ï¼šæ²¡æœ‰æ¤ç‰© 1ï¼š ç¬¬ä¸€ç§æ¤ç‰©
+	int frameIndex;//åºåˆ—å¸§çš„Â·åºå·
 	int timer;
 	int x, y;
-	bool catched;//ÊÇ·ñ±»½©Ê¬Åöµ½
+	bool catched;//æ˜¯å¦è¢«åƒµå°¸ç¢°åˆ°
 	int deadTimer;
 };
 struct zhiwu map[3][9];
@@ -40,20 +46,20 @@ struct zhiwu map[3][9];
 enum { SUNSHINE_DOWN, SUNSHINE_GROUND, SUNSHINE_COLLECT, SUNSHINE_PRODUCT };
 
 struct sunshineBall {
-	int x, y;//Ñô¹âÇóÔÚÆ®Âä¹ı³ÌÖĞµÄ×ø±êÎ»ÖÃ£¨x²»±ä£©
-	int frameIndex;//µ±Ç°ÏÔÊ¾Í¼Æ¬Ö¡µÄĞòºÅ
-	int destY; //Æ®Âä¹ı³ÌÖĞÄ¿±êÎ»ÖÃµÄy×ø±ê
-	int used; //³ØÀïÃæµÄÑô¹âÊÇ·ñÔÚÊ¹ÓÃ
+	int x, y;//é˜³å…‰æ±‚åœ¨é£˜è½è¿‡ç¨‹ä¸­çš„åæ ‡ä½ç½®ï¼ˆxä¸å˜ï¼‰
+	int frameIndex;//å½“å‰æ˜¾ç¤ºå›¾ç‰‡å¸§çš„åºå·
+	int destY; //é£˜è½è¿‡ç¨‹ä¸­ç›®æ ‡ä½ç½®çš„yåæ ‡
+	int used; //æ± é‡Œé¢çš„é˜³å…‰æ˜¯å¦åœ¨ä½¿ç”¨
 	int timer;
-	//±´Èû¶ûÇúÏßÏà¹Øµã
+	//è´å¡å°”æ›²çº¿ç›¸å…³ç‚¹
 	float t;
 	vector2 p1, p2, p3, p4;
-	vector2 pCur;//µ±Ç°Î»ÖÃ
-	float speed;//Ñô¹âÇòËÙ¶È
+	vector2 pCur;//å½“å‰ä½ç½®
+	float speed;//é˜³å…‰çƒé€Ÿåº¦
 	int status;
 };
 
-//³ØµÄ¸ÅÄî
+//æ± çš„æ¦‚å¿µ
 struct sunshineBall balls[10];
 IMAGE imgSunshineBall[29];
 int sunshine;
@@ -64,7 +70,7 @@ struct zm {
 	int row;
 	int blood;
 	bool dead;
-	bool eating;//ÕıÔÚ³ÔÖ²Îï
+	bool eating;//æ­£åœ¨åƒæ¤ç‰©
 	bool used;
 	int frameIndex;
 };
@@ -72,14 +78,15 @@ struct zm zms[10];
 IMAGE imgZM[22];
 IMAGE imgZMDead[20];
 IMAGE imgZMEat[21];
+IMAGE imgZMStand[11];
 
 struct bullet {
 	int x, y;
 	int row;
 	int used;
 	int speed;
-	bool blast;//ÊÇ·ñ±¬Õ¨
-	int frameIndex;//Ö¡ĞòºÅ
+	bool blast;//æ˜¯å¦çˆ†ç‚¸
+	int frameIndex;//å¸§åºå·
 
 };
 struct bullet bullets[30];
@@ -98,23 +105,29 @@ bool fileExist(const char* name) {
 	}
 }
 void gameInit() {
-	//¼ÓÔØÎÄ¼ş±³¾°Í¼Æ¬
-	//°Ñ×Ö·û¼¯ĞŞ¸ÄÎª¡°¶à×Ö½Ú¡±×Ö·û¼¯
+	//åŠ è½½æ–‡ä»¶èƒŒæ™¯å›¾ç‰‡
+	//æŠŠå­—ç¬¦é›†ä¿®æ”¹ä¸ºâ€œå¤šå­—èŠ‚â€å­—ç¬¦é›†
+	//å¼€å§‹æ’­æ”¾èƒŒæ™¯éŸ³ä¹ï¼ˆMP3æ ¼å¼ï¼‰
+	
 	loadimage(&imgBg, "res/bg.jpg");
 	loadimage(&imgBar, "res/bar2.png");
 
 	memset(imgZhiWu, 0, sizeof(imgZhiWu));
 	memset(map, 0, sizeof(map));
 
-	//³õÊ¼»¯Ö²Îï¿¨ÅÆ
+	killCount = 0;
+	zmCount = 0;
+	gameStatus = GOING;
+
+	//åˆå§‹åŒ–æ¤ç‰©å¡ç‰Œ
 	char name[64];
 	for (int i = 0; i < ZHI_WU_COUNT; i++) {
-		//Éú³ÉÖ²Îï¿¨ÅÆµÄÎÄ¼şÃû
+		//ç”Ÿæˆæ¤ç‰©å¡ç‰Œçš„æ–‡ä»¶å
 		sprintf_s(name, sizeof(name), "res/cards/card_%d.png", i + 1);
 		loadimage(&imgCards[i], name);
 		for (int j = 0; j < 20; j++) {
 			sprintf_s(name, sizeof(name), "res/zhiwu/%d/%d.png", i, j + 1);
-			//ÅĞ¶ÏÎÄ¼şÊÇ·ñ´æÔÚ
+			//åˆ¤æ–­æ–‡ä»¶æ˜¯å¦å­˜åœ¨
 			if (fileExist(name)) {
 				imgZhiWu[i][j] = new IMAGE;
 				loadimage(imgZhiWu[i][j], name);
@@ -131,24 +144,24 @@ void gameInit() {
 		sprintf_s(name, sizeof(name), "res/sunshine/%d.png", i + 1);
 		loadimage(&imgSunshineBall[i], name);
 	}
-	//´´½¨Ëæ»úÖÖ×Ó
+	//åˆ›å»ºéšæœºç§å­
 	srand(time(NULL));
 
-	//´´½¨ÓÎÏ·µÄÍ¼ĞÎ´°¿Ú
+	//åˆ›å»ºæ¸¸æˆçš„å›¾å½¢çª—å£
 	initgraph(WIN_WIDTH, WIN_HEIGHT, 1);
 
-	//ÉèÖÃ×ÖÌå
+	//è®¾ç½®å­—ä½“
 	LOGFONT f;
 	gettextstyle(&f);
 	f.lfHeight = 35;
 	f.lfWeight = 20;
 	strcpy(f.lfFaceName, "Segoe UI Black");
-	f.lfQuality = ANTIALIASED_QUALITY;//¿¹¾â³İ
+	f.lfQuality = ANTIALIASED_QUALITY;//æŠ—é”¯é½¿
 	settextstyle(&f);
-	setbkmode(TRANSPARENT);//±³¾°Ä£Ê½
+	setbkmode(TRANSPARENT);//èƒŒæ™¯æ¨¡å¼
 	setcolor(BLACK);
 
-	//³õÊ¼»¯½©Ê¬
+	//åˆå§‹åŒ–åƒµå°¸
 
 	memset(zms, 0, sizeof(zms));
 	for (int i = 0; i < 22; i++) {
@@ -156,22 +169,27 @@ void gameInit() {
 		loadimage(&imgZM[i], name);
 	}
 
-	//³õÊ¼»¯½©Ê¬ËÀÍö
+	//åˆå§‹åŒ–åƒµå°¸æ­»äº¡
 	for (int i = 0; i < 20; i++) {
 		sprintf_s(name, sizeof(name), "res/zm_dead/%d.png", i + 1);
 		loadimage(&imgZMDead[i], name);
 	}
-	//³õÊ¼»¯½©Ê¬³ÔÖ²Îï
+	//åˆå§‹åŒ–åƒµå°¸åƒæ¤ç‰©
 	for (int i = 0; i < 21; i++) {
 		sprintf_s(name, "res/zm_eat/%d.png", i + 1);
 		loadimage(&imgZMEat[i], name);
 	}
+	//åˆå§‹åŒ–åƒµå°¸ç«™ç«‹
+	for (int i = 0; i < 11; i++) {
+		sprintf_s(name, "res/zm_stand/%d.png", i + 1);
+		loadimage(&imgZMStand[i], name);
+	}
 
-	// ¼ÓÔØÍã¶¹×Óµ¯Í¼Æ¬
+	// åŠ è½½è±Œè±†å­å¼¹å›¾ç‰‡
 	loadimage(&imgBulletNormal, "res/bullets/bullet_normal.png");
 	memset(bullets, 0, sizeof(bullets));
 
-	//³õÊ¼»¯Íã¶¹×Óµ¯µÄÖ¡Í¼Æ¬
+	//åˆå§‹åŒ–è±Œè±†å­å¼¹çš„å¸§å›¾ç‰‡
 	loadimage(&imgBulletBlast[3], "res/bullets/bullet_blast.png");
 	for (int i = 0; i < 3; i++) {
 		float k = (i + 1) * 0.2;
@@ -233,7 +251,7 @@ void drawZhiWu() {
 			}
 		}
 	}
-	// äÖÈ¾ÍÏ¶¯¹ı³ÌÖĞµÄÖ²Îï
+	// æ¸²æŸ“æ‹–åŠ¨è¿‡ç¨‹ä¸­çš„æ¤ç‰©
 	if (curZhiWu) {
 		IMAGE* img = imgZhiWu[curZhiWu - 1][0];
 		putimagePNG(curX - img->getwidth() / 2, curY - img->getheight() / 2, imgZhiWu[curZhiWu - 1][0]);
@@ -257,10 +275,11 @@ void drawBullets() {
 	}
 
 }
-//È·¶¨Î»ÖÃ
+//ç¡®å®šä½ç½®
 void updateWindow() {
-	BeginBatchDraw();//¿ªÊ¼»º³å
-	putimage(0, 0, &imgBg);
+	BeginBatchDraw();//å¼€å§‹ç¼“å†²
+	
+	putimage(-112, 0, &imgBg);
 	putimagePNG(250, 0, &imgBar);
 
 	drawCards();
@@ -269,7 +288,7 @@ void updateWindow() {
 	drawBullets();
 	drawZM();
 
-	EndBatchDraw();//½áÊøË«»º³å
+	EndBatchDraw();//ç»“æŸåŒç¼“å†²
 }
 
 void collectSunshine(ExMessage* msg) {
@@ -299,7 +318,7 @@ void collectSunshine(ExMessage* msg) {
 void userClick() {
 	ExMessage msg;
 	static int status = 0;
-	//ÅĞ¶ÏÓĞÃ»ÓĞÏûÏ¢
+	//åˆ¤æ–­æœ‰æ²¡æœ‰æ¶ˆæ¯
 	if (peekmessage(&msg)) {
 		if (msg.message == WM_LBUTTONDOWN) {
 			if (msg.x > 316 && msg.x < 316 + 65 * ZHI_WU_COUNT && msg.y < 87) {
@@ -315,17 +334,17 @@ void userClick() {
 			curX = msg.x;
 			curY = msg.y;
 		}
-		else if (msg.message == WM_LBUTTONUP) {
-			if (msg.x > 250 && msg.y > 177 && msg.y < 489) {
+		else if (msg.message == WM_LBUTTONUP && status == 1) {
+			if (msg.x > 250 - 112 && msg.y > 177 && msg.y < 489) {
 				int row = (msg.y - 170) / 107;
-				int col = (msg.x - 250) / 82;
+				int col = (msg.x - (250 - 112)) / 82;
 				printf("%d %d\n", row, col);
-				//ÖÖÖ²Ö²Îï..²»ÄÜÖÖÁ½¿Å
+				//ç§æ¤æ¤ç‰©..ä¸èƒ½ç§ä¸¤é¢—
 				if (map[row][col].type == 0) {
 					map[row][col].type = curZhiWu;
 					map[row][col].frameIndex = 0;
 
-					map[row][col].x = 250 + col * 80;
+					map[row][col].x = 250 - 112 + col * 80;
 					map[row][col].y = 177 + row * 103 + 14;
 				}
 
@@ -343,7 +362,7 @@ void createSunshine() {
 	if (count > fre) {
 		fre = 200 + rand() % 200;
 		count = 0;
-		//´ÓÑô¹â³ØÀïÄÃÇò
+		//ä»é˜³å…‰æ± é‡Œæ‹¿çƒ
 		int ballMax = sizeof(balls) / sizeof(balls[0]);
 		int i;
 		for (i = 0; i < ballMax && balls[i].used; i++);
@@ -354,13 +373,13 @@ void createSunshine() {
 		balls[i].status = SUNSHINE_DOWN;
 
 		balls[i].t = 0;
-		balls[i].p1 = vector2(260 + rand() % (900 - 260), 60);
+		balls[i].p1 = vector2(260 - 112 + rand() % (900 - 260 + 112), 60);
 		balls[i].p4 = vector2(balls[i].p1.x, 200 + (rand() % 4) * 90);
 		int off = 2;
 		float diatance = balls[i].p4.y - balls[i].p1.y;
 		balls[i].speed = 1.0 / (diatance / off);
 	}
-	//ÏòÈÕ¿ûÉú²úÑô¹â
+	//å‘æ—¥è‘µç”Ÿäº§é˜³å…‰
 	int ballMax = sizeof(balls) / sizeof(balls[0]);
 	for (int i = 0; i < 3; i++) {
 		for (int j = 0; j < 9; j++) {
@@ -434,6 +453,9 @@ void updateSunshine() {
 }
 
 void createZM() {
+
+	if (zmCount >= ZM_MAX)return;
+
 	int zmMax = sizeof(zms) / sizeof(zms[0]);
 
 	static int zmFre = 200;
@@ -451,9 +473,10 @@ void createZM() {
 		zms[i].x = WIN_WIDTH;
 		zms[i].row = rand() % 3;
 		zms[i].y = 177 + (1 + zms[i].row) * 100;
-		zms[i].speed = 1;
+		zms[i].speed = 50;
 		zms[i].blood = 100;
 		zms[i].dead = false;
+		zmCount++;
 
 	}
 
@@ -465,14 +488,15 @@ void updateZM() {
 	count++;
 	if (count > 5) {
 		count = 0;
-		//¸üĞÂ½©Ê¬µÄÎ»ÖÃ
+		//æ›´æ–°åƒµå°¸çš„ä½ç½®
 		for (int i = 0; i < zmMax; i++) {
 			if (zms[i].used) {
 				zms[i].x -= zms[i].speed;
-				if (zms[i].x < 170) {
-					printf("GAME OVER\n");
+				if (zms[i].x < 40) {
+					/*printf("GAME OVER\n");
 					MessageBox(NULL, "over", "over", 0);
-					exit(0);
+					exit(0);*/
+					gameStatus = FAIL;
 				}
 			}
 		}
@@ -487,6 +511,10 @@ void updateZM() {
 					zms[i].frameIndex++;
 					if (zms[i].frameIndex >= 20) {
 						zms[i].used = false;
+						killCount++;
+						if (killCount == ZM_MAX) {
+							gameStatus = WIN;
+						}
 					}
 				}
 				else if (zms[i].eating) {
@@ -502,7 +530,7 @@ void updateZM() {
 }
 
 void shoot() {
-	static int count[3] = { 0 };//·Ö±ğÎªÃ¿Ò»ĞĞÉèÖÃÒ»¸ö¾²Ì¬´æ´¢Æ÷
+	static int count[3] = { 0 };//åˆ†åˆ«ä¸ºæ¯ä¸€è¡Œè®¾ç½®ä¸€ä¸ªé™æ€å­˜å‚¨å™¨
 	int lines[3] = { 0 };
 	int zmCount = sizeof(zms) / sizeof(zms[0]);
 	int bulletMax = sizeof(bullets) / sizeof(bullets[0]);
@@ -527,8 +555,8 @@ void shoot() {
 						bullets[k].frameIndex = 0;
 						bullets[k].blast = false;
 						bullets[k].row = i;
-						bullets[k].speed = 16;
-						int zwX = 250 + j * 83;
+						bullets[k].speed = 13;
+						int zwX = 250 - 112 + j * 83;
 						int zwY = 177 + i * 103 + 14;
 						bullets[k].x = zwX + imgZhiWu[map[i][j].type - 1][0]->getwidth() - 10;
 						bullets[k].y = zwY + 7;
@@ -594,7 +622,7 @@ void checkZM2ZhiWu() {
 		int row = zms[i].row;
 		for (int k = 0; k < 9; k++) {
 			if (map[row][k].type == 0) continue;
-			int zhiWuX = 256 + k * 80;
+			int zhiWuX = 256 - 112 + k * 80;
 
 			//     x1   x2
 			//     [     ]
@@ -628,13 +656,13 @@ void checkZM2ZhiWu() {
 	}
 }
 void collisionCheck() {
-	checkBullet2ZM();//×Óµ¯¶Ô½©Ê¬Åö×²
-	checkZM2ZhiWu();//½©Ê¬¶ÔÖ²ÎïÅö×²
+	checkBullet2ZM();//å­å¼¹å¯¹åƒµå°¸ç¢°æ’
+	checkZM2ZhiWu();//åƒµå°¸å¯¹æ¤ç‰©ç¢°æ’
 }
 
 void updateZhiWu() {
 	static int count = 0;
-	if (++count < 3)return;
+	if (++count < 5)return;
 	count = 0;
 	for (int i = 0; i < 3; i++) {
 		for (int j = 0; j < 9; j++) {
@@ -651,26 +679,27 @@ void updateZhiWu() {
 }
 
 void updateGame() {
+	
+	updateZhiWu();//æ›´æ–°æ¤ç‰©
 
-	updateZhiWu();//¸üĞÂÖ²Îï
+	createSunshine();//åˆ›å»ºé˜³å…‰
+	updateSunshine();//æ¸²æŸ“é˜³å…‰
 
-	createSunshine();//´´½¨Ñô¹â
-	updateSunshine();//äÖÈ¾Ñô¹â
+	createZM();//åˆ›å»ºåƒµå°¸
+	updateZM();//æ›´æ–°åƒµå°¸
 
-	createZM();//´´½¨½©Ê¬
-	updateZM();//¸üĞÂ½©Ê¬
+	shoot();//å‘å°„å­å¼¹
+	updateBullets();//æ›´æ–°å­å¼¹
 
-	shoot();//·¢Éä×Óµ¯
-	updateBullets();//¸üĞÂ×Óµ¯
+	collisionCheck();//å®ç°ç¢°æ’æ£€æµ‹
 
-	collisionCheck();//ÊµÏÖÅö×²¼ì²â
 }
 
 
 
 
 
-//ui½çÃæ,²Ëµ¥Éè¼Æ
+//uiç•Œé¢,èœå•è®¾è®¡
 void startUI() {
 	IMAGE imgBg, imgMenu1, imgMenu2;
 	loadimage(&imgBg, "res/MainMenu.png");
@@ -691,21 +720,133 @@ void startUI() {
 			}
 			else if (msg.message == WM_LBUTTONUP && flag == 1) {
 				Sleep(250);
-				return;
+				EndBatchDraw();
+				break;
 			}
 		}
 		EndBatchDraw();
 	}
 }
 
+void viewScence() {
+	int xMin = WIN_WIDTH - imgBg.getwidth();
+
+	vector2 point[9] = {
+		{550,80},{530,160},{630,170},{530,200},{690,340},
+		{563,370},{605,340},{705,280},{607,333} };
+	int index[9];
+
+	for (int i = 0; i < 9; i++) {
+		index[i] = rand() % 11;
+	}
+	int count = 0;
+	for (int x = 0; x >= xMin; x -= 2) {
+		BeginBatchDraw();
+		putimage(x, 0, &imgBg);
+		count++;
+		for (int k = 0; k < 9; k++) {
+			putimagePNG(point[k].x - xMin + x,
+				point[k].y,
+				&imgZMStand[index[k]]);
+			if (count >= 10) {
+				index[k] = (index[k] + 1) % 11;
+			}
+		}
+		if (count >= 10)count = 0;
+
+		EndBatchDraw();
+		Sleep(5);
+	}
+
+	//åœç•™
+	for (int i = 0; i < 100; i++) {
+		BeginBatchDraw();
+
+		putimage(xMin, 0, &imgBg);
+
+		for (int k = 0; k < 9; k++) {
+			putimagePNG(point[k].x, point[k].y, &imgZMStand[index[k]]);
+			index[k] = (index[k] + 1) % 11;
+		}
+		EndBatchDraw();
+		Sleep(16);
+	}
+
+	for (int x = xMin; x <= -112; x += 7) {
+
+		BeginBatchDraw();
+		putimage(x, 0, &imgBg);
+		count++;
+		for (int k = 0; k < 9; k++) {
+			putimagePNG(point[k].x - xMin + x,
+				point[k].y,
+				&imgZMStand[index[k]]);
+			if (count >= 10) {
+				index[k] = (index[k] + 1) % 11;
+			}
+		}
+		if (count >= 10)count = 0;
+
+		EndBatchDraw();
+		Sleep(5);
+	}
+}
+
+void barsDown() {
+	int height = imgBar.getheight();
+	int y;
+	for (y = -height; y <= 0; y++) {
+		BeginBatchDraw();
+		putimage(-112, 0, &imgBg);
+		putimagePNG(250, 0, &imgBar);
+
+		for (int i = 0; i < ZHI_WU_COUNT; i++) {
+			for (int i = 0; i < ZHI_WU_COUNT; i++) {
+				int x = 316 + i * 65;
+				int y1 = 5 + y;
+				putimage(x, y1, &imgCards[i]);
+			}
+		}
+		EndBatchDraw();
+		Sleep(5);
+	}
+}
+
+
+bool checkOver() {
+	int ret = false;
+	if (gameStatus == WIN) {
+		Sleep(2000);
+		PlaySound("res/win.wav", NULL, SND_FILENAME | SND_ASYNC);
+		loadimage(0, "res/win.png");
+		ret = true;
+	}
+	else if (gameStatus == FAIL) {
+		Sleep(2000);
+		PlaySound("res/lose.wav", NULL, SND_FILENAME | SND_ASYNC);
+		loadimage(0, "res/fail2.png");
+		ret = true;
+	}
+	return ret;
+}
 int main(void) {
 	gameInit();
+
 	startUI();
+
+	viewScence();
+
+	barsDown();
+
+
 	int timer = 0;
 	bool flag = true;
+	mciSendString("open \"res/bg.mp3\" type mpegvideo alias bgmusic", NULL, 0, NULL);
+	mciSendString("play bgmusic repeat", NULL, 0, NULL);
 	while (1) {
+
 		userClick();
-		//getDaly ÊÇtoolÀïµÄ¹¤¾ß
+		//getDaly æ˜¯toolé‡Œçš„å·¥å…·
 		timer += getDelay();
 		if (timer > 15) {
 			flag = true;
@@ -715,6 +856,7 @@ int main(void) {
 			flag = false;
 			updateWindow();
 			updateGame();
+			if(checkOver()) break;
 		}
 	}
 	system("pause");
